@@ -1,73 +1,24 @@
 import streamlit as st
 import pandas as pd
 
-# 1. Sayfa Ayarları ve Görsel Tema (Kurumsal Renk Tonları)
-st.set_page_config(
-    page_title="Warmhaus Servis Portalı",
-    page_icon="🚐",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# Sayfa Ayarları (Mobil Odaklı)
+st.set_page_config(page_title="Warmhaus Servis Portalı", page_icon="🚐", layout="wide")
 
-# Özel CSS ile Stil Verme (Sadeliği ve Şıklığı Artıran Kısım)
+# Tasarım CSS (Sadelik ve Şıklık)
 st.markdown("""
 <style>
-    /* Genel Arka Plan ve Yazı Tipi */
-    .stApp {
-        background-color: #f4f7f6; /* Çok hafif gri arka plan */
-        font-family: 'Roboto', sans-serif;
-    }
-    
-    /* Ana Başlık Stili */
-    .main-title {
-        color: #1e3a8a; /* Koyu Lacivert */
-        text-align: center;
-        font-weight: 700;
-        font-size: 36px;
-        margin-bottom: 20px;
-    }
-    
-    /* Alt Başlık Stili */
-    .section-subtitle {
-        color: #0d9488; /* Turkuaz Vurgu */
-        font-weight: 600;
-        font-size: 20px;
-        margin-top: 15px;
-        margin-bottom: 10px;
-    }
-
-    /* Güzergah Seçim Kutusu Stili */
-    .stSelectbox label {
-        color: #4b5563; /* Orta Gri */
-        font-weight: 500;
-    }
-    
-    /* Bilgi Kartı Stili (Şoför ve Liste İçin) */
-    .info-card {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Hafif gölge */
-        margin-bottom: 20px;
-        border-left: 5px solid #0d9488; /* Turkuaz sol şerit */
-    }
-
-    /* Şoför İsim Başlığı */
-    .driver-name {
-        color: #111827; /* Çok Koyu Gri */
-        font-size: 24px;
-        font-weight: 700;
-    }
-
-    /* Veri DataFrame Tablosu Özelleştirme */
-    .stDataFrame {
-        border-radius: 8px;
-        overflow: hidden;
+    .stApp { background-color: #f1f5f9; }
+    .main-title { color: #1e3a8a; text-align: center; font-weight: 800; font-size: 30px; padding: 15px; }
+    .info-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #0284c7; }
+    .driver-name { font-size: 20px; font-weight: 700; color: #1e293b; }
+    .action-button { 
+        display: inline-block; padding: 12px 24px; background-color: #0284c7; color: white !important; 
+        text-decoration: none; border-radius: 10px; font-weight: 600; text-align: center; width: 100%; margin-top: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Google Sheets Bilgileri (Aynı Kalıyor)
+# Veri Kaynakları
 SHEET_ID = "1kWV5OgXsHprJro7O3zgb-wc8bzAnzUhdVReo2sheADI"
 LISTE_GID = "1161773988"
 PERSONEL_GID = "1207904188"
@@ -75,67 +26,59 @@ PERSONEL_GID = "1207904188"
 url_liste = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={LISTE_GID}"
 url_personel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={PERSONEL_GID}"
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=30) # 30 saniyede bir veriyi tazeler
 def get_data(url):
-    df = pd.read_csv(url)
-    return df.dropna(how='all', axis=1)
+    return pd.read_csv(url).dropna(how='all', axis=1)
 
-# 3. Arayüz Başlığı (Özel Klasman)
-st.markdown('<div class="main-title">🚐 Warmhaus Servis Portalı</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🚐 Warmhaus Servis Takip</div>', unsafe_allow_html=True)
 
 try:
     df_liste = get_data(url_liste)
     df_personel = get_data(url_personel)
-
-    # 4. Sadeleştirilmiş Güzergah Seçimi (İlk Bakış)
     hatlar = sorted(df_liste['Servis Hat Seçiniz'].unique())
-    
-    # Başlangıç talimatı
-    st.markdown('<div class="section-subtitle">🚩 Lütfen Servis Hattınızı Seçin:</div>', unsafe_allow_html=True)
-    secilen_hat = st.selectbox("", ["Güzergah Seçiniz..."] + list(hatlar), label_visibility="collapsed")
 
-    st.markdown("---")
+    # Hat Seçimi
+    secilen_hat = st.selectbox("🚩 Lütfen servis hattınızı seçin:", ["Hat Seçiniz..."] + list(hatlar))
 
-    # 5. Seçilen Hata Göre İçerik (Şık Kartlarla)
-    if secilen_hat != "Güzergah Seçiniz...":
+    if secilen_hat != "Hat Seçiniz...":
+        st.markdown("---")
+        
         filtreli_liste = df_liste[df_liste['Servis Hat Seçiniz'] == secilen_hat]
         filtreli_sofor = df_personel[df_personel['Servis Hattı'] == secilen_hat]
-        
-        # A. Şoför Bilgi Kartı (Estetik Tasarım)
-        if not filtreli_sofor.empty:
-            sofor_bilgi = filtreli_sofor.iloc[0]
-            st.markdown(f"""
+
+        col1, col2 = st.columns([1, 1.2])
+
+        with col1:
+            if not filtreli_sofor.empty:
+                sofor = filtreli_sofor.iloc[0]
+                # Şoför ve Konum Kartı
+                st.markdown(f"""
                 <div class="info-card">
-                    <div class="driver-name">👤 {sofor_bilgi['Şoför']}</div>
-                    <p style="margin-top: 10px; color: #4b5563;">
-                        <strong>📍 Hat:</strong> {secilen_hat} Hattı<br>
-                        <strong>🚗 Plaka:</strong> {sofor_bilgi['Plaka']}<br>
-                        <strong>📞 Telefon:</strong> <a href="tel:{sofor_bilgi['Telefon']}" style="color: #0d9488; text-decoration: none;">{sofor_bilgi['Telefon']}</a>
+                    <div class="driver-name">👤 {sofor['Şoför']}</div>
+                    <p style="color: #475569; margin-bottom: 15px;">
+                        <b>🚗 Plaka:</b> {sofor['Plaka']}<br>
+                        <b>📞 Tel:</b> <a href="tel:{sofor['Telefon']}">{sofor['Telefon']}</a>
                     </p>
+                    <hr style="border: 0.5px solid #e2e8f0;">
+                    <p style="font-weight: 600; color: #0284c7; margin-bottom: 5px;">📍 Canlı Takip Sistemi</p>
+                    <p style="font-size: 14px; color: #64748b;">Servisin nerede olduğunu canlı haritada görmek için aşağıdaki butona basın.</p>
+                    <a href="Https://maps.app.goo.gl/ShdXPrweM7dTrXx29" target="_blank" class="action-button">🗺️ Haritada Canlı İzle</a>
                 </div>
-            """, unsafe_allow_html=True)
-        
-        # B. Personel Liste Kartı (Hafif Gölgeden)
-        st.markdown('<div class="section-subtitle">👥 Servis Yolcu Listesi</div>', unsafe_allow_html=True)
-        
-        # Sadece gerekli sütunları şık bir tabloyla göster
-        st.dataframe(
-            filtreli_liste[['AD-SOYAD', 'SERVİS DURAĞI']], 
-            use_container_width=True, 
-            hide_index=True,
-            column_config={
-                "AD-SOYAD": st.column_config.TextColumn("👤 Personel Adı"),
-                "SERVİS DURAĞI": st.column_config.TextColumn("📍 Biniş Durağı")
-            }
-        )
-        
+                """, unsafe_allow_html=True)
+                
+        with col2:
+            st.markdown(f"#### 👥 {secilen_hat} Yolcu Listesi")
+            st.dataframe(
+                filtreli_liste[['AD-SOYAD', 'SERVİS DURAĞI']], 
+                use_container_width=True, 
+                hide_index=True,
+                height=400
+            )
     else:
-        # Başlangıç Durumu: Sade Bir Yönlendirme
-        st.info("Yukarıdaki menüden gitmek istediğiniz servis hattını seçerek şoför bilgilerini ve yolcu listesini görebilirsiniz.")
+        st.info("Bilgileri görmek için yukarıdan bir güzergah seçin.")
 
 except Exception as e:
-    st.error(f"Veri yüklenirken bir sorun oluştu. Lütfen bağlantınızı ve Google Sheets ayarlarınızı kontrol edin. (Hata: {e})")
+    st.error("Veriler yüklenirken bir hata oluştu. Google Sheets ayarlarını kontrol edin.")
 
-# Alt Bilgi (Sade)
 st.markdown("---")
-st.caption("Veriler Google Sheets üzerinden otomatik olarak güncellenmektedir. Warmhaus Dijital Çözümler.")
+st.caption("Warmhaus Dijital - Veriler otomatik olarak güncellenmektedir.")
