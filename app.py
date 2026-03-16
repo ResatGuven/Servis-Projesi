@@ -1,100 +1,114 @@
 import streamlit as st
 import pandas as pd
 
-# 1. Sayfa Ayarları (Mobil Odaklı ve Başlıklı)
+# 1. Sayfa Ayarları
 st.set_page_config(
-    page_title="Warmhaus Personel Portalı",
-    page_icon="🚐",
-    layout="wide", # Geniş ekran
-    initial_sidebar_state="collapsed" # Yan menü kapalı
+    page_title="Warmhaus | Servis Portalı",
+    page_icon="🏢",
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# 2. Özel CSS ile Stil Verme (Canlılık ve Şıklık Katan Kısım)
+# 2. Üst Seviye Premium Tasarım (CSS)
 st.markdown("""
 <style>
-    /* Genel Arka Plan ve Yazı Tipi */
+    /* Arka Plan: Modern Koyu/Gradyan Geçişi */
     .stApp {
-        background-color: #ffffff; /* Bembeyaz arka plan */
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #f8fafc;
     }
-    
-    /* Ana Başlık Stili */
-    .main-title {
-        color: #1e3a8a; /* Koyu Lacivert */
+
+    /* Ana Başlık Alanı */
+    .header-container {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        padding: 30px;
+        border-radius: 0 0 30px 30px;
         text-align: center;
-        font-weight: 800;
-        font-size: 36px;
-        padding: 20px 0;
-        margin-bottom: 10px;
-        border-bottom: 2px solid #e2e8f0; /* Hafif alt çizgi */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 30px;
     }
-    
-    /* Alt Başlık Stili */
-    .section-subtitle {
-        color: #0284c7; /* Canlı Mavi/Turkuaz */
-        font-weight: 700;
-        font-size: 22px;
-        margin-top: 20px;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-    }
-    
-    .section-subtitle i { margin-right: 10px; } /* İkon boşluğu */
 
-    /* Bilgi Kartı Stili (Şoför ve Liste İçin) */
-    .info-card {
-        background-color: #ffffff;
+    .main-title {
+        background: linear-gradient(90deg, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 40px;
+        font-weight: 900;
+        letter-spacing: -1px;
+    }
+
+    /* Kart Tasarımı (Glassmorphism) */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.07);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 25px;
-        border-radius: 16px; /* Yuvarlak köşeler */
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Şık gölge */
+        border-radius: 24px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
         margin-bottom: 25px;
-        border: 1px solid #e2e8f0; /* Hafif kenarlık */
-    }
-
-    /* Şoför İsim Başlığı */
-    .driver-name {
-        color: #111827; /* Çok Koyu Gri */
-        font-size: 26px;
-        font-weight: 800;
-        margin-bottom: 10px;
+        transition: transform 0.3s ease;
     }
     
-    /* Şoför Detay Yazıları */
-    .driver-detail {
-        color: #4b5563; /* Orta Gri */
-        font-size: 16px;
-        margin-bottom: 8px;
+    .glass-card:hover {
+        transform: translateY(-5px);
+        border: 1px solid rgba(56, 189, 248, 0.5);
+    }
+
+    /* Şoför İsmi ve Detaylar */
+    .driver-name {
+        font-size: 28px;
+        font-weight: 700;
+        color: #38bdf8;
+        margin-bottom: 15px;
+    }
+
+    .info-item {
         display: flex;
         align-items: center;
+        margin-bottom: 10px;
+        font-size: 16px;
+        color: #cbd5e1;
     }
-    .driver-detail i { margin-right: 8px; color: #0284c7; } /* İkon rengi */
 
-    /* Veri DataFrame Tablosu Özelleştirme */
-    .stDataFrame {
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    .info-item i {
+        margin-right: 12px;
+        color: #818cf8;
+        width: 20px;
+    }
+
+    /* Selectbox ve Tablo Özelleştirme */
+    .stSelectbox div[data-baseweb="select"] {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 12px !important;
+        color: white !important;
     }
     
-    /* DataFrame Başlık Rengi */
-    .stDataFrame thead tr th {
-        background-color: #f1f5f9 !important;
-        color: #1e3a8a !important;
-        font-weight: 700 !important;
+    /* Tablo Tasarımı */
+    div[data-testid="stDataFrame"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-radius: 20px !important;
+        padding: 10px;
     }
 
-    /* Mobil Uyum İçin Ekstra Düzenlemeler */
-    @media (max-width: 768px) {
-        .main-title { font-size: 28px; }
-        .info-card { padding: 15px; }
-        .driver-name { font-size: 22px; }
+    /* Telefon Butonu */
+    .phone-btn {
+        display: block;
+        background: linear-gradient(90deg, #0284c7, #0369a1);
+        color: white !important;
+        text-align: center;
+        padding: 12px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 600;
+        margin-top: 15px;
     }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 """, unsafe_allow_html=True)
 
-# 3. Google Sheets Verileri (Aynı Kalıyor)
+# 3. Google Sheets Verileri
 SHEET_ID = "1kWV5OgXsHprJro7O3zgb-wc8bzAnzUhdVReo2sheADI"
 LISTE_GID = "1161773988"
 PERSONEL_GID = "1207904188"
@@ -102,65 +116,75 @@ PERSONEL_GID = "1207904188"
 url_liste = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={LISTE_GID}"
 url_personel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={PERSONEL_GID}"
 
-@st.cache_data(ttl=60) # Veriyi 60 saniyede bir tazele
+@st.cache_data(ttl=60)
 def get_data(url):
-    df = pd.read_csv(url)
-    return df.dropna(how='all', axis=1) # Boş sütunları temizle
+    return pd.read_csv(url).dropna(how='all', axis=1)
 
-# 4. Arayüz Başlığı (Özel Klasman)
-st.markdown('<div class="main-title">🚐 Warmhaus Personel Servis Portalı</div>', unsafe_allow_html=True)
+# 4. Üst Başlık Alanı
+st.markdown("""
+    <div class="header-container">
+        <div class="main-title">WARMHAUS</div>
+        <div style="color: #94a3b8; font-weight: 500;">Dijital Servis Takip Portalı</div>
+    </div>
+""", unsafe_allow_html=True)
 
 try:
     df_liste = get_data(url_liste)
     df_personel = get_data(url_personel)
-
-    # 5. Sadeleştirilmiş Güzergah Seçimi (İlk Bakış)
     hatlar = sorted(df_liste['Servis Hat Seçiniz'].unique())
-    
-    # Başlangıç talimatı (İkonlu)
-    st.markdown('<div class="section-subtitle"><i class="fas fa-map-marker-alt"></i> Lütfen Servis Hattınızı Seçin:</div>', unsafe_allow_html=True)
-    secilen_hat = st.selectbox("", ["Güzergah Seçiniz..."] + list(hatlar), label_visibility="collapsed")
 
-    st.markdown("---")
+    # Seçim Alanı
+    col_s, _ = st.columns([1, 1])
+    with col_s:
+        secilen_hat = st.selectbox("🚩 Hattınızı Seçin", ["Lütfen bir hat seçiniz..."] + list(hatlar))
 
-    # 6. Seçilen Hata Göre İçerik (Şık Kartlarla)
-    if secilen_hat != "Güzergah Seçiniz...":
+    if secilen_hat != "Lütfen bir hat seçiniz...":
+        st.markdown("---")
+        
         filtreli_liste = df_liste[df_liste['Servis Hat Seçiniz'] == secilen_hat]
         filtreli_sofor = df_personel[df_personel['Servis Hattı'] == secilen_hat]
-        
-        # A. Şoför Bilgi Kartı (Estetik Tasarım)
-        if not filtreli_sofor.empty:
-            sofor_bilgi = filtreli_sofor.iloc[0]
-            st.markdown(f"""
-                <div class="info-card">
-                    <div class="driver-name">👤 {sofor_bilgi['Şoför']}</div>
-                    <div class="driver-detail"><i class="fas fa-bus"></i> <b>Hat:</b> {secilen_hat} Hattı</div>
-                    <div class="driver-detail"><i class="fas fa-id-card"></i> <b>Plaka:</b> {sofor_bilgi['Plaka']}</div>
-                    <div class="driver-detail"><i class="fas fa-phone-alt"></i> <b>Telefon:</b> <a href="tel:{sofor_bilgi['Telefon']}" style="color: #0284c7; text-decoration: none; font-weight:600;">{sofor_bilgi['Telefon']}</a></div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # B. Personel Liste Kartı (Canlı Başlık)
-        st.markdown(f'<div class="section-subtitle"><i class="fas fa-users"></i> {secilen_hat} Hattı Yolcu Listesi</div>', unsafe_allow_html=True)
-        
-        # Sadece gerekli sütunları şık bir tabloyla göster
-        st.dataframe(
-            filtreli_liste[['AD-SOYAD', 'SERVİS DURAĞI']], 
-            use_container_width=True, # Genişliği kapla
-            hide_index=True, # İndeks numarasını gizle
-            column_config={
-                "AD-SOYAD": st.column_config.TextColumn("👤 Personel Adı"),
-                "SERVİS DURAĞI": st.column_config.TextColumn("📍 Biniş Durağı")
-            }
-        )
-        
+
+        col1, col2 = st.columns([1, 1.5])
+
+        with col1:
+            if not filtreli_sofor.empty:
+                sofor = filtreli_sofor.iloc[0]
+                # Modern Şoför Kartı
+                st.markdown(f"""
+                    <div class="glass-card">
+                        <div style="color: #38bdf8; font-size: 14px; font-weight: 700; margin-bottom: 5px;">SERVİS SORUMLUSU</div>
+                        <div class="driver-name">{sofor['Şoför']}</div>
+                        <div class="info-item"><i class="fas fa-bus"></i> <b>Güzergah:</b> {secilen_hat}</div>
+                        <div class="info-item"><i class="fas fa-barcode"></i> <b>Araç Plaka:</b> {sofor['Plaka']}</div>
+                        <a href="tel:{sofor['Telefon']}" class="phone-btn"><i class="fas fa-phone"></i> Hemen Ara</a>
+                    </div>
+                """, unsafe_allow_html=True)
+
+        with col2:
+            st.markdown(f'<div style="color: #f8fafc; font-size: 20px; font-weight: 600; margin-bottom: 15px;">👥 {secilen_hat} Yolcu Listesi</div>', unsafe_allow_html=True)
+            # Tablo Stilini de içeren DataFrame
+            st.dataframe(
+                filtreli_liste[['AD-SOYAD', 'SERVİS DURAĞI']], 
+                use_container_width=True, 
+                hide_index=True,
+                height=450
+            )
+
     else:
-        # Başlangıç Durumu: Sade Bir Yönlendirme (İkonlu)
-        st.info("👋 Merhaba! Yukarıdaki menüden gitmek istediğiniz servis hattını seçerek şoför bilgilerini ve yolcu listesini anında görebilirsiniz.")
+        st.markdown("""
+            <div style="text-align: center; margin-top: 50px; color: #64748b;">
+                <i class="fas fa-chevron-up" style="font-size: 30px; margin-bottom: 10px;"></i>
+                <p>Başlamak için yukarıdan bir servis hattı seçin.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
 except Exception as e:
-    st.error(f"Veriler yüklenirken bir sorun oluştu. Lütfen bağlantınızı ve Google Sheets ayarlarınızı kontrol edin. (Hata: {e})")
+    st.error(f"Veri bağlantısı kurulamadı. Hata: {e}")
 
-# Alt Bilgi (Sade ve Kurumsal)
-st.markdown("---")
-st.caption("Veriler Google Sheets üzerinden otomatik olarak güncellenmektedir. Warmhaus Dijital Çözümler © 2026")
+# Footer
+st.markdown(f"""
+    <div style="text-align: center; padding: 40px; color: #475569; font-size: 12px;">
+        WARMHAUS ISL. VE TES. CİH. SAN. TİC. A.Ş. <br> 
+        © 2026 Dijital Dönüşüm Departmanı
+    </div>
+""", unsafe_allow_html=True)
