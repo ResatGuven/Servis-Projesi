@@ -1,72 +1,60 @@
 import streamlit as st
 import pandas as pd
 
-# Sayfa Genişliği ve Başlık Ayarı
-st.set_page_config(page_title="Servis Takip Sistemi", layout="wide", initial_sidebar_state="collapsed")
+# Mobil uyumlu genişlik ve sayfa ayarı
+st.set_page_config(page_title="Servis Takip", layout="wide", initial_sidebar_state="collapsed")
 
-# 1. Google Sheets Bilgileri (Son paylaştığın güncel linklerden aldım)
+# Google Sheets Bilgileri
 SHEET_ID = "1kWV5OgXsHprJro7O3zgb-wc8bzAnzUhdVReo2sheADI"
-LISTE_GID = "1161773988"     # Servisliste sekmesinin güncel ID'si
-PERSONEL_GID = "1207904188"  # Servispersonel sekmesinin güncel ID'si
+LISTE_GID = "1161773988"
+PERSONEL_GID = "1207904188"
 
-# 2. En güvenli veri çekme link formatı (gviz)
 url_liste = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={LISTE_GID}"
 url_personel = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={PERSONEL_GID}"
 
-# Veri çekme fonksiyonu
-@st.cache_data(ttl=60) # Veriyi dakikada bir günceller
+@st.cache_data(ttl=60)
 def get_data(url):
-    return pd.read_csv(url)
+    df = pd.read_csv(url)
+    return df.dropna(how='all', axis=1)
 
-# Arayüz Başlığı
-st.title("🚐 Servis Güzergah ve Şoför Takip Sistemi")
-st.markdown("---")
+# Başlık
+st.title("🚐 Servis Güzergah Portalı")
+st.markdown("Lütfen listesini görmek istediğiniz **Servis Hattını** seçin:")
 
-# Sayfalar (Sekmeler)
-tab1, tab2 = st.tabs(["📋 Tüm Personel Listesi", "📞 Şoför & Araç Bilgileri"])
+try:
+    df_liste = get_data(url_liste)
+    df_personel = get_data(url_personel)
 
-with tab1:
-    try:
-        df_liste = get_data(url_liste)
+    # 1. Güzergah Seçim Kutucukları (Filtreleme)
+    hatlar = sorted(df_liste['Servis Hat Seçiniz'].unique())
+    
+    # Seçim menüsünü buton gibi kullanmak için (Mobil dostu)
+    secilen_hat = st.selectbox("🚩 Güzergah Seçin:", ["Hepsini Göster"] + list(hatlar))
+
+    st.markdown("---")
+
+    # 2. Seçilen Hata Göre Veriyi Filtrele
+    if secilen_hat != "Hepsini Göster":
+        filtreli_liste = df_liste[df_liste['Servis Hat Seçiniz'] == secilen_hat]
+        filtreli_sofor = df_personel[df_personel['Servis Hattı'] == secilen_hat]
         
-        # Sütun isimlerini temizle (Google bazen boş sütunlar ekleyebilir)
-        df_liste = df_liste.dropna(how='all', axis=1)
+        # Şoför Bilgisi (Öne Çıkarılmış)
+        if not filtreli_sofor.empty:
+            sofor_bilgi = filtreli_sofor.iloc[0]
+            with st.expander(f"📞 {secilen_hat} Hattı Şoför Bilgileri (Tıkla)", expanded=True):
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Şoför", sofor_bilgi['Şoför'])
+                c2.metric("Plaka", sofor_bilgi['Plaka'])
+                c3.write(f"**Telefon:** \n\n {sofor_bilgi['Telefon']}")
         
-        # Filtreleme Seçenekleri
-        search = st.text_input("Personel, Güzergah veya Durak Ara:", placeholder="Örn: Akpınar veya Canan Altın...")
+        st.subheader(f"👥 {secilen_hat} Hattı Yolcu Listesi")
+        st.dataframe(filtreli_liste[['AD-SOYAD', 'SERVİS DURAĞI']], use_container_width=True, hide_index=True)
         
-        if search:
-            # Tüm sütunlarda arama yapar
-            filtered_df = df_liste[df_liste.astype(str).apply(lambda x: x.str.contains(search, case=False)).any(axis=1)]
-        else:
-            filtered_df = df_liste
+    else:
+        st.info("Yukarıdaki menüden bir güzergah seçerek o servisteki kişileri görebilirsiniz.")
+        st.dataframe(df_liste[['AD-SOYAD', 'Servis Hat Seçiniz', 'SERVİS DURAĞI']], use_container_width=True, hide_index=True)
 
-        # Tabloyu Göster
-        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
-    except Exception as e:
-        st.error(f"Liste yüklenirken bir hata oluştu. Hata: {e}")
-        st.info("Lütfen Google Sheets 'Paylaş' ayarının 'Bağlantıya sahip olan herkes' olarak seçili olduğundan emin ol.")
+except Exception as e:
+    st.error(f"Veri yükleme hatası: {e}")
 
-with tab2:
-    try:
-        df_personel = get_data(url_personel)
-        df_personel = df_personel.dropna(how='all', axis=1)
-        
-        st.subheader("Aktif Servis Şoförleri")
-        
-        # Şoförleri kartlar halinde göster
-        cols = st.columns(3)
-        for index, row in df_personel.iterrows():
-            with cols[index % 3]:
-                with st.container(border=True):
-                    # Görsellerdeki sütun başlıklarına göre ayarlandı
-                    st.write(f"### 👤 {row['Şoför']}")
-                    st.write(f"**📍 Hat:** {row['Servis Hattı']}")
-                    st.write(f"**🚗 Plaka:** {row['Plaka']}")
-                    st.write(f"**📞 Tel:** {row['Telefon']}")
-    except Exception as e:
-        st.error(f"Şoför bilgileri yüklenemedi. Hata: {e}")
-
-# Alt Bilgi
-st.markdown("---")
-st.caption("Veriler Google Sheets üzerinden anlık olarak çekilmektedir.")
+st.caption("Veriler Google Sheets üzerinden otomatik güncellenir.")
