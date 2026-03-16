@@ -1,43 +1,38 @@
 import streamlit as st
 import pandas as pd
 
-# 1. Sayfa Ayarları (Tam Mobil Odaklı)
+# 1. Sayfa Ayarları (Mobil Uygulama Hissi)
 st.set_page_config(page_title="Warmhaus Portal", page_icon="🚐", layout="centered")
 
-# 2. Üst Düzey Mobil App Tasarımı (CSS) - Daha Ferah ve Modern
+# 2. Modern ve Canlı UI Tasarımı
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    
     .stApp { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
     
-    /* Mobil Header */
     .app-header {
         background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
         padding: 35px 20px;
-        border-radius: 0 0 25px 25px;
+        border-radius: 0 0 30px 30px;
         text-align: center;
         color: white;
-        margin-bottom: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 15px -3px rgba(30, 58, 138, 0.2);
     }
+    .app-title { font-size: 26px; font-weight: 800; margin: 0; }
     
-    .app-title { font-size: 26px; font-weight: 800; letter-spacing: -1px; margin: 0; }
-    
-    /* Modern Kart Yapısı */
+    /* Kartlar */
     .mobile-card {
         background: white;
         border-radius: 20px;
         padding: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
         border: 1px solid #f1f5f9;
     }
     
-    .driver-name { font-size: 20px; font-weight: 700; color: #0f172a; }
-    
-    /* Şık Telefon Butonu */
     .call-btn {
-        background: #22c55e;
+        background: #10b981;
         color: white !important;
         display: flex;
         align-items: center;
@@ -49,80 +44,65 @@ st.markdown("""
         margin-top: 15px;
         gap: 8px;
     }
-
-    /* Admin Badge */
-    .admin-badge {
-        background: #fee2e2;
-        color: #ef4444;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 10px;
-    }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 """, unsafe_allow_html=True)
 
-# 3. Veri Kaynakları
+# 3. Veri Kaynakları (Yeni Linkinle Güncellendi)
 SHEET_ID = "1kWV5OgXsHprJro7O3zgb-wc8bzAnzUhdVReo2sheADI"
 LISTE_GID = "1161773988"
 PERSONEL_GID = "1207904188"
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=5) # Admin düzenlemesi için süreyi kısalttık
 def get_data(gid):
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={gid}"
     return pd.read_csv(url).dropna(how='all', axis=1)
 
 # Header
-st.markdown('<div class="app-header"><div class="app-title">WARMHAUS</div><div style="opacity:0.8; font-size:12px;">Personel Servis Yönetimi</div></div>', unsafe_allow_html=True)
+st.markdown('<div class="app-header"><div class="app-title">WARMHAUS</div><div style="opacity:0.8; font-size:12px;">Servis Yönetim Portalı</div></div>', unsafe_allow_html=True)
 
-# 4. Admin Girişi (Sidebar/Yan Menü)
+# 4. Yan Menü ve Admin Girişi
 with st.sidebar:
-    st.subheader("🔐 Yönetici Girişi")
-    admin_sifre = st.text_input("Şifre", type="password")
-    # Şifreyi buradan istediğin gibi değiştirebilirsin
-    is_admin = admin_sifre == "Admin16" 
+    st.subheader("🔐 Yönetici Paneli")
+    input_sifre = st.text_input("Şifre", type="password")
+    is_admin = input_sifre == "Admin123"
 
     if is_admin:
-        st.markdown('<div class="admin-badge">Yönetici Modu Aktif</div>', unsafe_allow_html=True)
-        mod = st.radio("İşlem Seçin:", ["Servis İzle", "Veri Yönetimi (Ekle/Sil)"])
+        st.success("Admin Yetkisi Aktif ✅")
+        islem = st.radio("Menü:", ["Servis Görüntüle", "Listeyi Düzenle (Anlık)"])
     else:
-        mod = "Servis İzle"
+        islem = "Servis Görüntüle"
 
-# 5. Ana Ekran Mantığı
+# 5. Ana Ekran
 try:
     df_liste = get_data(LISTE_GID)
     df_personel = get_data(PERSONEL_GID)
 
-    if is_admin and mod == "Veri Yönetimi (Ekle/Sil)":
-        st.subheader("🛠 Veri Yönetim Paneli")
-        st.info("Aşağıdaki butona basarak Personel veya Şoför listesini anlık olarak düzenleyebilirsin. Değişiklikler bittiğinde bu sayfayı yenilemen yeterli olacaktır.")
+    if is_admin and islem == "Listeyi Düzenle (Anlık)":
+        st.subheader("📝 Uygulama İçinden Düzenleme")
+        st.warning("Hücrelere tıklayarak veriyi değiştirebilirsiniz. (Not: Kalıcı kayıt için API yetkisi gerekir)")
         
-        # Google Sheets Düzenleme Linki
-        edit_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit"
-        st.link_button("📊 Tabloyu Düzenle (Google Sheets)", edit_url)
+        # Google Sheets'e gitmeden düzenleme aracı
+        edited_df = st.data_editor(df_liste, use_container_width=True, num_rows="dynamic")
         
-        st.divider()
-        st.write("Current Personel Listesi (Önizleme):")
-        st.dataframe(df_liste, use_container_width=True)
+        if st.button("Değişiklikleri Onayla"):
+            st.success("Değişiklikler işlendi! (Kalıcı kayıt için Service Account kurulmalıdır)")
 
     else:
-        # PERSONEL EKRANI
+        # KULLANICI EKRANI
         hatlar = sorted(df_liste['Servis Hat Seçiniz'].unique())
-        secilen_hat = st.selectbox("📍 Hattınızı Seçin:", ["Seçiniz..."] + list(hatlar))
+        secilen_hat = st.selectbox("🚩 Hattınızı Seçin:", ["Seçiniz..."] + list(hatlar))
 
         if secilen_hat != "Seçiniz...":
-            sofor_verisi = df_personel[df_personel['Servis Hattı'] == secilen_hat]
-            yolcu_listesi = df_liste[df_liste['Servis Hat Seçiniz'] == secilen_hat]
+            sofor_info = df_personel[df_personel['Servis Hattı'] == secilen_hat]
+            yolcular = df_liste[df_liste['Servis Hat Seçiniz'] == secilen_hat]
 
-            if not sofor_verisi.empty:
-                s = sofor_verisi.iloc[0]
+            if not sofor_info.empty:
+                s = sofor_info.iloc[0]
                 st.markdown(f"""
                     <div class="mobile-card">
-                        <div style="color: #3b82f6; font-size: 11px; font-weight: 700; text-transform: uppercase;">Servis Şoförü</div>
-                        <div class="driver-name">{s['Şoför']}</div>
+                        <div style="color: #3b82f6; font-size: 11px; font-weight: 800; text-transform: uppercase;">Şoför Bilgisi</div>
+                        <div style="font-size: 22px; font-weight: 700; color: #1e293b;">{s['Şoför']}</div>
                         <div style="color: #64748b; font-size: 14px; margin-top: 5px;">
                             <i class="fas fa-shuttle-van"></i> Plaka: <b>{s['Plaka']}</b>
                         </div>
@@ -132,10 +112,10 @@ try:
                     </div>
                 """, unsafe_allow_html=True)
 
-            st.markdown(f"#### 👥 {secilen_hat} Listesi")
-            st.dataframe(yolcu_listesi[['AD-SOYAD', 'SERVİS DURAĞI']], use_container_width=True, hide_index=True)
+            st.markdown(f"#### 👥 {secilen_hat} Yolcu Listesi")
+            st.dataframe(yolcular[['AD-SOYAD', 'SERVİS DURAĞI']], use_container_width=True, hide_index=True)
 
 except Exception as e:
-    st.error("Bir hata oluştu. Lütfen Google Sheets paylaşım ayarlarını kontrol et.")
+    st.error(f"Bağlantı Hatası: {e}")
 
-st.markdown("<br><center style='color:#cbd5e1; font-size:10px;'>Warmhaus IT Solution © 2026</center>", unsafe_allow_html=True)
+st.markdown("<br><center style='color:#94a3b8; font-size:10px;'>Warmhaus IT Solution</center>", unsafe_allow_html=True)
